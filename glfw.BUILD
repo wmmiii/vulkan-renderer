@@ -45,6 +45,6 @@ cc_library(
     deps = ["@vulkan//:vulkan"],
     includes = ["include"],
     visibility = ["//visibility:public"],
-    copts = ["-D_GLFW_X11=1"],
+    defines = ["_GLFW_X11=1"],
     linkopts = ["-ldl", "-lX11", "-lpthread"],
 )

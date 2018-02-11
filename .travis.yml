@@ -1,0 +1,20 @@
+dist: trusty
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - wget
+      - pkg-config
+
+before_install:
+  - sudo apt install -y openjdk-8-jdk
+  - echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
+  - curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
+  - sudo apt update -y
+  - sudo apt install -y bazel libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev
+
+
+script:
+- bazel build //src:main
