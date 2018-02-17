@@ -18,3 +18,4 @@ before_install:
 
 script:
 - bazel build //src:main
+- bazel build //src:debug
