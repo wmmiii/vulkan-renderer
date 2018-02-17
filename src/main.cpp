@@ -4,6 +4,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <set>
 #include <stdexcept>
 #include <vector>
 
@@ -44,8 +45,9 @@ void DestroyDebugReportCallbackEXT(VkInstance instance,
 
 struct QueueFamilyIndicies {
   int graphicsFamily = -1;
+  int presentFamily = -1;
 
-  bool isComplete() { return graphicsFamily >= 0; }
+  bool isComplete() { return graphicsFamily >= 0 && presentFamily >= 0; }
 };
 
 class HelloTriangleApplication {
@@ -64,6 +66,8 @@ class HelloTriangleApplication {
   VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
   VkDevice device;
   VkQueue graphicsQueue;
+  VkSurfaceKHR surface;
+  VkQueue presentQueue;
 
   static VKAPI_ATTR VkBool32 VKAPI_CALL
   debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType,
@@ -86,6 +90,7 @@ class HelloTriangleApplication {
   void initVulkan() {
     createInstance();
     setupDebugCallback();
+    createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
   }
@@ -183,6 +188,13 @@ class HelloTriangleApplication {
     }
   }
 
+  void createSurface() {
+    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) !=
+        VK_SUCCESS) {
+      throw std::runtime_error("Failed to create window surface!");
+    }
+  }
+
   void pickPhysicalDevice() {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -230,6 +242,13 @@ class HelloTriangleApplication {
         indicies.graphicsFamily = i;
       }
 
+      VkBool32 presentSupport = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+
+      if (queueFamily.queueCount > 0 && presentSupport) {
+        indicies.presentFamily = i;
+      }
+
       if (indicies.isComplete()) {
         break;
       }
@@ -243,19 +262,27 @@ class HelloTriangleApplication {
   void createLogicalDevice() {
     QueueFamilyIndicies indicies = findQueueFamilies(physicalDevice);
 
-    VkDeviceQueueCreateInfo queueCreateInfo = {};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = indicies.graphicsFamily;
-    queueCreateInfo.queueCount = 1;
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<int> uniqueQueueFamilies = {indicies.graphicsFamily,
+                                         indicies.presentFamily};
 
     float queuePriority = 1.0f;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
+    for (int queueFamily : uniqueQueueFamilies) {
+      VkDeviceQueueCreateInfo queueCreateInfo = {};
+      queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+      queueCreateInfo.queueFamilyIndex = queueFamily;
+      queueCreateInfo.queueCount = 1;
+      queueCreateInfo.pQueuePriorities = &queuePriority;
+      queueCreateInfos.push_back(queueCreateInfo);
+    }
 
     VkPhysicalDeviceFeatures deviceFeatures = {};
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
+    createInfo.queueCreateInfoCount =
+        static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.queueCreateInfoCount = 1;
     createInfo.pEnabledFeatures = &deviceFeatures;
 
@@ -275,6 +302,7 @@ class HelloTriangleApplication {
     }
 
     vkGetDeviceQueue(device, indicies.graphicsFamily, 0, &graphicsQueue);
+    vkGetDeviceQueue(device, indicies.presentFamily, 0, &presentQueue);
   }
 
   void mainLoop() {
@@ -285,8 +313,8 @@ class HelloTriangleApplication {
 
   void cleanup() {
     vkDestroyDevice(device, nullptr);
-
     DestroyDebugReportCallbackEXT(instance, callback, nullptr);
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 
     glfwDestroyWindow(window);
