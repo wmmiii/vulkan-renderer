@@ -109,6 +109,7 @@ class HelloTriangleApplication {
     createLogicalDevice();
     createSwapChain();
     createImageViews();
+    createGraphicsPipeline();
   }
 
   void createInstance() {
@@ -501,6 +502,8 @@ class HelloTriangleApplication {
       }
     }
   }
+
+  void createGraphicsPipeline() {}
 
   void mainLoop() {
     while (!glfwWindowShouldClose(window)) {

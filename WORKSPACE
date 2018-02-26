@@ -16,8 +16,8 @@ new_http_archive(
     url = "https://github.com/g-truc/glm/archive/0afc784511ccd10cd0ede233a44ed8e2757ba1e4.zip",
 )
 
-load("@com_github_wmmiii_vulkan_renderer//vulkan:repository_rule.bzl", "vulkan")
+load("@com_github_wmmiii_vulkan_renderer//vulkan:repository_rule.bzl", "vulkan_repository")
 
-vulkan(
-    name = "vulkan",
+vulkan_repository(
+    name = "com_lunarg_sdk_vulkan",
 )

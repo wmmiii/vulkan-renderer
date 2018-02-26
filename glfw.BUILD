@@ -42,7 +42,7 @@ cc_library(
     name = "glfw",
     srcs = COMMON_SOURCES + X11_SOURCES,
     hdrs = COMMON_HEADERS + X11_HEADERS,
-    deps = ["@vulkan//:vulkan"],
+    deps = ["@com_lunarg_sdk_vulkan//:vulkan_repository"],
     includes = ["include"],
     visibility = ["//visibility:public"],
     defines = ["_GLFW_X11=1"],
