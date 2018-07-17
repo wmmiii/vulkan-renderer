@@ -1,7 +1,7 @@
 def _impl(ctx):
     input = ctx.file.src
     output = ctx.outputs.out
-    args = ["-V", input.path, "-o", output.basename]
+    args = ["-V", input.path, "-o", output.path]
     
     ctx.actions.run(
         inputs = [input],

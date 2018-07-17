@@ -1,7 +1,11 @@
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 
+#include "fragment_shader.h"
+#include "vertex_shader.h"
+
 #include <cstring>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <limits>
@@ -503,7 +507,10 @@ class HelloTriangleApplication {
     }
   }
 
-  void createGraphicsPipeline() {}
+  void createGraphicsPipeline() {
+    auto vertShaderCode = VERTEX_SHADER;
+    auto fragShaderCode = FRAG_SHADER;
+  }
 
   void mainLoop() {
     while (!glfwWindowShouldClose(window)) {
@@ -528,7 +535,15 @@ class HelloTriangleApplication {
   }
 };
 
-int main() {
+int main(int argv, char* argc[]) {
+  for (char c : VERTEX_SHADER) {
+    std::cout << c << std::endl;
+  }
+
+  for (int i = 0; i < argv; i++) {
+    std::cout << argc[i] << std::endl;
+  }
+
   HelloTriangleApplication app;
 
   try {

@@ -1,4 +1,4 @@
 cc_binary(
     name = "main",
-    deps = ["//src:vulkan-renderer"]
+    deps = ["//src:main", "//src/shaders:frag", "//src/shaders:vertex"]
 )
