@@ -9,7 +9,7 @@ def _impl(ctx):
         outputs = [output],
         inputs = [input, ctx.file._injectatron_binary],
         arguments = args,
-        progress_message = "INJECTATRONING",
+        progress_message = "INJECTATRON",
         executable = ctx.executable._injectatron_binary,
     )
 

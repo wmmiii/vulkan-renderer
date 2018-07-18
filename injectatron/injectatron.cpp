@@ -62,7 +62,5 @@ int main(int argv, char* argc[]) {
 
   output_file.close();
 
-  std::cout << "DONE" << std::endl;
-
   return 0;
 }
