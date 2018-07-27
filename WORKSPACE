@@ -16,6 +16,13 @@ new_http_archive(
     url = "https://github.com/g-truc/glm/archive/0afc784511ccd10cd0ede233a44ed8e2757ba1e4.zip",
 )
 
+new_http_archive(
+    name = "stb",
+    build_file = "stb.BUILD",
+    strip_prefix = "stb-e6afb9cbae4064da8c3e69af3ff5c4629579c1d2",
+    url = "https://github.com/nothings/stb/archive/e6afb9cbae4064da8c3e69af3ff5c4629579c1d2.zip",
+)
+
 load("@com_github_wmmiii_vulkan_renderer//vulkan:repository_rule.bzl", "vulkan_repository")
 
 vulkan_repository(
