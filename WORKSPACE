@@ -23,6 +23,24 @@ new_http_archive(
     url = "https://github.com/nothings/stb/archive/e6afb9cbae4064da8c3e69af3ff5c4629579c1d2.zip",
 )
 
+new_http_archive(
+    name = "tinyobjloader",
+    build_file = "tinyobjloader.BUILD",
+    strip_prefix = "tinyobjloader-fd06fa49e4e3f4811df4ee566a0ea41832eb0cca",
+    url = "https://github.com/syoyo/tinyobjloader/archive/fd06fa49e4e3f4811df4ee566a0ea41832eb0cca.zip",
+)
+
+new_http_archive(
+    name = "chaletmodel",
+    build_file_content = "exports_files([\"chalet.obj\"],visibility = [\"//visibility:public\"],)",
+    url = "https://vulkan-tutorial.com/resources/chalet.obj.zip",
+)
+
+http_file(
+    name = "chalettexture",
+    url = "https://vulkan-tutorial.com/resources/chalet.jpg",
+)
+
 load("@com_github_wmmiii_vulkan_renderer//vulkan:repository_rule.bzl", "vulkan_repository")
 
 vulkan_repository(

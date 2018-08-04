@@ -4,9 +4,13 @@
 #include "GLFW/glfw3.h"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/hash.hpp"
 #include "stb_image.h"
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
 
 #include "fragment_shader.h"
 #include "vertex_shader.h"
@@ -19,10 +23,14 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
+
+const std::string MODEL_PATH = "external/chaletmodel/chalet.obj";
+const std::string TEXTURE_PATH = "external/chalettexture/file/chalet.jpg";
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -108,22 +116,24 @@ struct Vertex {
 
     return attributeDescriptions;
   }
+
+  bool operator==(const Vertex& other) const {
+    return pos == other.pos && color == other.color &&
+           texCoord == other.texCoord;
+  }
 };
 
-const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
-    {{0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-    {{0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-
+namespace std {
+template <>
+struct hash<Vertex> {
+  size_t operator()(Vertex const& vertex) const {
+    return ((hash<glm::vec3>()(vertex.pos) ^
+             (hash<glm::vec3>()(vertex.color) << 1)) >>
+            1) ^
+           (hash<glm::vec2>()(vertex.texCoord) << 1);
+  }
 };
-
-const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
+}  // namespace std
 
 struct UniformBufferObject {
   glm::mat4 model;
@@ -165,10 +175,15 @@ class HelloTriangleApplication {
   std::vector<VkSemaphore> renderFinishedSemaphores;
   std::vector<VkFence> inFlightFences;
   size_t currentFrame = 0;
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
+
   VkBuffer vertexBuffer;
   VkDeviceMemory vertexBufferMemory;
+
   VkBuffer indexBuffer;
   VkDeviceMemory indexBufferMemory;
+
   std::vector<VkBuffer> uniformBuffers;
   std::vector<VkDeviceMemory> uniformBuffersMemory;
 
@@ -229,6 +244,7 @@ class HelloTriangleApplication {
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
+    loadModel();
     createVertexBuffer();
     createIndexBuffer();
     createUniformBuffers();
@@ -956,6 +972,7 @@ class HelloTriangleApplication {
     for (VkFormat format : candidates) {
       VkFormatProperties props;
       vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+
       if (tiling == VK_IMAGE_TILING_LINEAR &&
           (props.linearTilingFeatures & features) == features) {
         return format;
@@ -963,9 +980,9 @@ class HelloTriangleApplication {
                  (props.optimalTilingFeatures & features) == features) {
         return format;
       }
-
-      throw std::runtime_error("Failed to find supported format!");
     }
+
+    throw std::runtime_error("Failed to find supported format!");
   }
 
   bool hasStencilComponent(VkFormat format) {
@@ -976,8 +993,8 @@ class HelloTriangleApplication {
   void createTextureImage() {
     int texWidth, texHeight, texChannels;
 
-    stbi_uc* pixels = stbi_load("src/textures/texture.jpg", &texWidth,
-                                &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight,
+                                &texChannels, STBI_rgb_alpha);
 
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
@@ -1172,6 +1189,43 @@ class HelloTriangleApplication {
                          nullptr, 0, nullptr, 1, &barrier);
 
     endSingleTimeCommands(commandBuffer);
+  }
+
+  void loadModel() {
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+                          MODEL_PATH.c_str())) {
+      throw std::runtime_error(err);
+    }
+
+    std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+
+    for (const auto& shape : shapes) {
+      for (const auto& index : shape.mesh.indices) {
+        Vertex vertex = {};
+
+        vertex.pos = {attrib.vertices[3 * index.vertex_index + 0],
+                      attrib.vertices[3 * index.vertex_index + 1],
+                      attrib.vertices[3 * index.vertex_index + 2]};
+
+        vertex.texCoord = {
+            attrib.texcoords[2 * index.texcoord_index + 0],
+            1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
+
+        vertex.color = {1.0f, 1.0f, 1.0f};
+
+        if (uniqueVertices.count(vertex) == 0) {
+          uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+          vertices.push_back(vertex);
+        }
+
+        indices.push_back(uniqueVertices[vertex]);
+      }
+    }
   }
 
   void createVertexBuffer() {
@@ -1476,7 +1530,7 @@ class HelloTriangleApplication {
       vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
       vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0,
-                           VK_INDEX_TYPE_UINT16);
+                           VK_INDEX_TYPE_UINT32);
 
       vkCmdBindDescriptorSets(commandBuffers[i],
                               VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
