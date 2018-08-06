@@ -23,11 +23,14 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
+#include <unistd.h>
 #include <unordered_map>
 #include <vector>
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
+
+const uint microsecondsPerFrame = 6944;
 
 const std::string MODEL_PATH = "external/chaletmodel/chalet.obj";
 const std::string TEXTURE_PATH = "external/chalettexture/file/chalet.jpg";
@@ -175,6 +178,7 @@ class HelloTriangleApplication {
   std::vector<VkSemaphore> renderFinishedSemaphores;
   std::vector<VkFence> inFlightFences;
   size_t currentFrame = 0;
+  std::chrono::time_point<std::chrono::high_resolution_clock> frameStart;
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
 
@@ -1870,8 +1874,17 @@ class HelloTriangleApplication {
 
   void mainLoop() {
     while (!glfwWindowShouldClose(window)) {
+      auto frameStart = std::chrono::high_resolution_clock::now();
       glfwPollEvents();
       drawFrame();
+      auto frameEnd = std::chrono::high_resolution_clock::now();
+      auto frameLength = std::chrono::duration_cast<std::chrono::microseconds>(
+                             frameEnd - frameStart)
+                             .count();
+
+      if (frameLength < microsecondsPerFrame) {
+        usleep(microsecondsPerFrame - frameLength);
+      }
     }
 
     vkDeviceWaitIdle(device);
