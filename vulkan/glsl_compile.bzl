@@ -15,7 +15,7 @@ def _impl(ctx):
 glsl_compile = rule(
     attrs = {
         "compiler": attr.label(
-            default = Label("//vulkan:VulkanSDK/1.0.68.0/x86_64/bin/glslangValidator"),
+            default = Label("@com_lunarg_sdk_vulkan//:vulkan_sdk/1.1.82.1/x86_64/bin/glslangValidator"),
             allow_single_file = True,
             cfg = "data",
             executable = True,

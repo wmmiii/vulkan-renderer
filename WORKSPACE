@@ -41,8 +41,8 @@ http_file(
     url = "https://vulkan-tutorial.com/resources/chalet.jpg",
 )
 
-load("@com_github_wmmiii_vulkan_renderer//vulkan:repository_rule.bzl", "vulkan_repository")
+load("@com_github_wmmiii_vulkan_renderer//vulkan:repository_rule.bzl", "vulkan_dependencies")
 
-vulkan_repository(
+vulkan_dependencies(
     name = "com_lunarg_sdk_vulkan",
 )

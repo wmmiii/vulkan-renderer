@@ -24,13 +24,11 @@ injectatron(
 glsl_compile(
     name = "frag",
     src = "shader.frag",
-    compiler = "@com_lunarg_sdk_vulkan//:VulkanSDK/1.0.68.0/x86_64/bin/glslangValidator",
     out = "frag.spv",
 )
 
 glsl_compile(
     name = "vertex",
     src = "shader.vert",
-    compiler = "@com_lunarg_sdk_vulkan//:VulkanSDK/1.0.68.0/x86_64/bin/glslangValidator",
     out = "vertex.spv",
 )
